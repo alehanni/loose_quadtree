@@ -1,5 +1,5 @@
-#ifndef QUADTREE3_H
-#define QUADTREE3_H
+#ifndef QUADTREE2_H
+#define QUADTREE2_H
 
 #include <vector>
 #include <limits>
