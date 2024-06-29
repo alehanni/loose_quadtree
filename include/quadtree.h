@@ -6,10 +6,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <cassert>
-#include <raylib.h> // ONLY USED FOR DEMO
 
 using node_id = std::uint32_t;
-static constexpr node_id null = node_id(-1);
+static constexpr node_id empty = node_id(-1);
 static constexpr float inf = std::numeric_limits<float>::infinity();
 
 struct point {
@@ -89,13 +88,13 @@ template<typename T>
 using bbox_func = std::function<bbox(T&)>;
 
 struct node {
-    node_id nw = null;
-    node_id ne = null;
-    node_id sw = null;
-    node_id se = null;
+    node_id nw = empty;
+    node_id ne = empty;
+    node_id sw = empty;
+    node_id se = empty;
 };
 
-struct qtree {
+struct quadtree {
     bbox bb;
     node_id root;
     
@@ -111,18 +110,18 @@ struct qtree {
     // region query
     void query(bbox query_bb, std::vector<std::uint32_t> &result);
 
-private:
+protected:
     void query_helper(bbox query_bb, node_id nid, std::vector<std::uint32_t> &result);
 };
 
-void qtree::query_helper(bbox query_bb, node_id nid, std::vector<std::uint32_t> &result) {
+void quadtree::query_helper(bbox query_bb, node_id nid, std::vector<std::uint32_t> &result) {
     if (query_bb.intersect(node_bbs[nid])) {
 
         bool is_not_leaf = false;
-        if (null != nodes[nid].nw && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].nw, result);
-        if (null != nodes[nid].ne && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].ne, result);
-        if (null != nodes[nid].sw && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].sw, result);
-        if (null != nodes[nid].se && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].se, result);
+        if (empty != nodes[nid].nw && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].nw, result);
+        if (empty != nodes[nid].ne && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].ne, result);
+        if (empty != nodes[nid].sw && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].sw, result);
+        if (empty != nodes[nid].se && (is_not_leaf = true)) query_helper(query_bb, nodes[nid].se, result);
 
         if (!is_not_leaf) {
             auto i_begin = node_points_begin[nid];
@@ -134,34 +133,34 @@ void qtree::query_helper(bbox query_bb, node_id nid, std::vector<std::uint32_t> 
                     result.push_back(indices[i]);
             }
 
-            DrawRectangleLines( // ONLY USED FOR DEMO
-            node_bbs[nid].minx + 0.5f,
-            node_bbs[nid].miny + 0.5f,
-            node_bbs[nid].maxx - node_bbs[nid].minx + 0.5f,
-            node_bbs[nid].maxy - node_bbs[nid].miny + 0.5f,
-            BLUE
-        );
-        } else {
-            DrawRectangleLines( // ONLY USED FOR DEMO
-            node_bbs[nid].minx + 0.5f,
-            node_bbs[nid].miny + 0.5f,
-            node_bbs[nid].maxx - node_bbs[nid].minx + 0.5f,
-            node_bbs[nid].maxy - node_bbs[nid].miny + 0.5f,
-            RED
-        );
-        }
+            //DrawRectangleLines( // ONLY USED FOR DEMO
+            //node_bbs[nid].minx + 0.5f,
+            //node_bbs[nid].miny + 0.5f,
+            //node_bbs[nid].maxx - node_bbs[nid].minx + 0.5f,
+            //node_bbs[nid].maxy - node_bbs[nid].miny + 0.5f,
+            //BLUE
+            //);
+        } //else {
+        //    DrawRectangleLines( // ONLY USED FOR DEMO
+        //    node_bbs[nid].minx + 0.5f,
+        //    node_bbs[nid].miny + 0.5f,
+        //    node_bbs[nid].maxx - node_bbs[nid].minx + 0.5f,
+        //    node_bbs[nid].maxy - node_bbs[nid].miny + 0.5f,
+        //    RED
+        //);
+        //}
     }
 }
 
-void qtree::query(bbox query_bb, std::vector<std::uint32_t> &result) {
+void quadtree::query(bbox query_bb, std::vector<std::uint32_t> &result) {
     // check overlap with root node bb
     if (query_bb.intersect(node_bbs[root]))
         query_helper(query_bb, root, result);
 }
 
-node_id build_helper(qtree &tree, bbox const &bb, pointbox *p_begin, pointbox *p_end, std::uint32_t depth_limit) {
+node_id build_helper(quadtree &tree, bbox const &bb, pointbox *p_begin, pointbox *p_end, std::uint32_t depth_limit) {
 
-    if (p_begin == p_end) return null;
+    if (p_begin == p_end) return empty;
 
     node_id result = tree.nodes.size();
     tree.nodes.emplace_back();
@@ -197,10 +196,10 @@ node_id build_helper(qtree &tree, bbox const &bb, pointbox *p_begin, pointbox *p
     return result;
 }
 
-static constexpr std::uint32_t MAX_QUADTREE_DEPTH = 3;
+static constexpr std::uint32_t MAX_QUADTREE_DEPTH = 4;
 
 template<typename T>
-qtree build(std::vector<T> xs, std::vector<std::uint32_t> &indices, bbox_func<T> to_bbox) {
+quadtree build(std::vector<T> xs, std::vector<std::uint32_t> &indices, bbox_func<T> to_bbox) {
 
     assert(xs.size() > 0);
 
@@ -220,7 +219,7 @@ qtree build(std::vector<T> xs, std::vector<std::uint32_t> &indices, bbox_func<T>
     bbox big_box = bbox();
     std::for_each(&pbs.front(), &pbs.back(), [&big_box](pointbox &pb) mutable {big_box |= pb.mid;});
 
-    qtree qt;
+    quadtree qt;
     qt.pointboxes = std::move(pbs);
     qt.indices = std::move(indices);
     qt.root = build_helper(qt, big_box, &qt.pointboxes.front(), &qt.pointboxes.back(), MAX_QUADTREE_DEPTH);
