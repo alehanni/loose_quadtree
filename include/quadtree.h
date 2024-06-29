@@ -132,23 +132,7 @@ void quadtree::query_helper(bbox query_bb, node_id nid, std::vector<std::uint32_
                 if (query_bb.intersect(pointboxes[i].bb))
                     result.push_back(indices[i]);
             }
-
-            //DrawRectangleLines( // ONLY USED FOR DEMO
-            //node_bbs[nid].minx + 0.5f,
-            //node_bbs[nid].miny + 0.5f,
-            //node_bbs[nid].maxx - node_bbs[nid].minx + 0.5f,
-            //node_bbs[nid].maxy - node_bbs[nid].miny + 0.5f,
-            //BLUE
-            //);
-        } //else {
-        //    DrawRectangleLines( // ONLY USED FOR DEMO
-        //    node_bbs[nid].minx + 0.5f,
-        //    node_bbs[nid].miny + 0.5f,
-        //    node_bbs[nid].maxx - node_bbs[nid].minx + 0.5f,
-        //    node_bbs[nid].maxy - node_bbs[nid].miny + 0.5f,
-        //    RED
-        //);
-        //}
+        }
     }
 }
 

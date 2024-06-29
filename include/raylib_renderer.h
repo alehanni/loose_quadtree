@@ -38,7 +38,12 @@ struct raylib_renderer {
 
     static auto texture_from_memory(unsigned char data[], unsigned int size) {
         auto img = LoadImageFromMemory(".png", data, size);
-        return LoadTextureFromImage(img);
+
+        auto id = texture_handles.size();
+        texture_handles.emplace_back();
+        texture_handles[id] = LoadTextureFromImage(img);
+
+        return id;
     }
 
     static void draw_rectangle(auto xmin, auto xmax, auto rgba) {
@@ -50,9 +55,13 @@ struct raylib_renderer {
     }
 
     static void draw_sprite(auto xy_dest, auto xy_src, auto w, auto h, auto id) {
-        DrawTextureRec(id, {x: xy_src.x, y: xy_src.y, width: w, height: h}, {x: xy_dest.x, y: xy_dest.y}, WHITE);
+        DrawTextureRec(texture_handles[id], {x: xy_src.x, y: xy_src.y, width: w, height: h}, {x: xy_dest.x, y: xy_dest.y}, WHITE);
     }
 
+private:
+    static std::vector<Texture2D> texture_handles;
 };
+
+std::vector<Texture2D> raylib_renderer::texture_handles = {};
 
 #endif
