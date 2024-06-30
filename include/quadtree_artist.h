@@ -3,13 +3,13 @@
 
 #include "quadtree.h"
 #include "utiltypes.h"
+#include "renderer.h"
 
 // a class that draws a quadtree
 
-template<typename Renderer>
 struct quadtree_artist {
 
-    quadtree_artist(quadtree &qt, Renderer &r) : _qt(qt), _r(r)
+    quadtree_artist(quadtree &qt) : _qt(qt)
     { }
 
     void draw() {
@@ -30,7 +30,9 @@ struct quadtree_artist {
 protected:
 
     void draw_helper(node_id nid, bbox const& bb) {
-        _r.draw_rectangle(
+        auto r = entt::locator<renderer>::value();
+
+        r->draw_rectangle(
             (vec2_t){bb.minx, bb.miny},
             (vec2_t){bb.maxx, bb.maxy},
             (rgba_t){130, 130, 130, 255});
@@ -49,7 +51,7 @@ protected:
             auto start_inc = _qt.node_points_begin[nid];
             auto end_excl = _qt.node_points_begin[nid + 1];
             for (auto i = start_inc; i < end_excl; i++) {
-                _r.draw_rectangle(
+                r->draw_rectangle(
                     (vec2_t){_qt.pointboxes[i].bb.minx, _qt.pointboxes[i].bb.miny},
                     (vec2_t){_qt.pointboxes[i].bb.maxx, _qt.pointboxes[i].bb.maxy},
                     (rgba_t){200, 200, 200, 255});
@@ -58,6 +60,8 @@ protected:
     }
 
     void draw_query_helper(node_id nid, bbox &query_bb) {
+        auto r = entt::locator<renderer>::value();
+
         if (query_bb.intersect(_qt.node_bbs[nid])) {
 
             if (empty != _qt.nodes[nid].nw) draw_query_helper(_qt.nodes[nid].nw, query_bb);
@@ -65,7 +69,7 @@ protected:
             if (empty != _qt.nodes[nid].sw) draw_query_helper(_qt.nodes[nid].sw, query_bb);
             if (empty != _qt.nodes[nid].se) draw_query_helper(_qt.nodes[nid].se, query_bb);
 
-            _r.draw_rectangle(
+            r->draw_rectangle(
                 (vec2_t){_qt.node_bbs[nid].minx, _qt.node_bbs[nid].miny},
                 (vec2_t){_qt.node_bbs[nid].maxx, _qt.node_bbs[nid].maxy},
                 (rgba_t){255, 0, 0, 255});
@@ -73,7 +77,6 @@ protected:
     }
 
     quadtree &_qt;
-    Renderer &_r;
 };
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef RAYLIBRENDERER_H
 #define RAYLIBRENDERER_H
 
+#include <vector>
+
 #include "raylib.h"
 #include "utiltypes.h"
 
@@ -73,11 +75,14 @@ struct raylib_renderer {
             texture_handles[id],
             {(float)xy_src.x, (float)xy_src.y, (float)w, (float)h},
             {(float)xy_dest.x, (float)xy_dest.y},
-            WHITE);
+            WHITE
+        );
     }
 
 private:
-    std::vector<Texture2D> texture_handles;
+    static std::vector<Texture2D> texture_handles;
 };
+
+std::vector<Texture2D> raylib_renderer::texture_handles;
 
 #endif

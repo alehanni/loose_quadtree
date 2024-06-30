@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-
 #include <cstdint>
 
 #include "entt/entt.hpp"
@@ -26,8 +25,8 @@ struct Renderer: entt::type_list<> {
             entt::poly_call<3u>(*this);
         }
 
-        void window_should_close() {
-            entt::poly_call<4u>(*this);
+        [[nodiscard]] bool window_should_close() {
+            return entt::poly_call<4u>(*this);
         }
 
         void clear_screen() {
@@ -69,5 +68,21 @@ struct Renderer: entt::type_list<> {
         &Type::draw_rectangle_fill,
         &Type::draw_sprite>;
 };
+
+struct noop_renderer {
+    void start_drawing() { }
+    void stop_drawing() { }
+    void init_window(int, int, const char *) { }
+    void close_window() { }
+    bool window_should_close() { return false; }
+    void clear_screen() { }
+    vec2_t get_mouse_position() { return vec2_t{}; }
+    uint64_t texture_from_memory(unsigned char [], unsigned int) { return 0u; }
+    void draw_rectangle(vec2_t, vec2_t, rgba_t) { }
+    void draw_rectangle_fill(vec2_t, vec2_t, rgba_t) { }
+    void draw_sprite(vec2_t, vec2_t, double, double, uint64_t) { }
+};
+
+using renderer = entt::poly<Renderer>;
 
 #endif
