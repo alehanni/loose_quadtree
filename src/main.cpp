@@ -13,6 +13,11 @@
 #include "quadtree_artist.h"
 #include "utiltypes.h"
 
+#include "entt/entt.hpp"
+#include "renderer.h"
+
+using renderer = entt::poly<Renderer>;
+
 struct ctx {
     raylib_renderer r;
     quadtree qt;
@@ -23,7 +28,7 @@ struct ctx {
 
 void draw_items(std::vector<rectangle> const& rects, size_t tex_handle, auto &r) {
     for (auto i=0U; i<rects.size(); i++)
-        r.draw_sprite(rects[i].min, (vec2){(float)(i % 16) * 16.f, (float)(i / 16) * 16.f}, 16, 16, tex_handle);
+        r.draw_sprite(rects[i].min, (vec2_t){(float)(i % 16) * 16.f, (float)(i / 16) * 16.f}, 16, 16, tex_handle);
 }
 
 void update_draw_frame(void *ctx_arg) {
@@ -43,7 +48,10 @@ void update_draw_frame(void *ctx_arg) {
     auto mpos = r.get_mouse_position();
 
     bbox offset_bb = {
-        mpos.x + cursor_bb.minx, mpos.y + cursor_bb.miny, mpos.x + cursor_bb.maxx, mpos.y + cursor_bb.maxy
+        mpos.x + cursor_bb.minx,
+        mpos.y + cursor_bb.miny,
+        mpos.x + cursor_bb.maxx,
+        mpos.y + cursor_bb.maxy
     };
     query_results.clear();
     qt.query(offset_bb, query_results);
@@ -61,20 +69,23 @@ void update_draw_frame(void *ctx_arg) {
     // draw query results
     for (auto i = 0U; i < query_results.size(); i++)
         r.draw_rectangle(
-            (vec2){qt.pointboxes[query_results[i]].bb.minx, qt.pointboxes[query_results[i]].bb.miny},
-            (vec2){qt.pointboxes[query_results[i]].bb.maxx, qt.pointboxes[query_results[i]].bb.maxy},
-            (color){0, 255, 0, 255});
+            (vec2_t){qt.pointboxes[query_results[i]].bb.minx, qt.pointboxes[query_results[i]].bb.miny},
+            (vec2_t){qt.pointboxes[query_results[i]].bb.maxx, qt.pointboxes[query_results[i]].bb.maxy},
+            (rgba_t){0, 255, 0, 255});
 
     // draw box at cursor
     r.draw_rectangle_fill(
-        (vec2){mpos.x + cursor_bb.minx, mpos.y + cursor_bb.miny}, 
-        (vec2){mpos.x + cursor_bb.maxx, mpos.y + cursor_bb.maxy},
-        (color){0, 228, 48, 255});
+        (vec2_t){mpos.x + cursor_bb.minx, mpos.y + cursor_bb.miny}, 
+        (vec2_t){mpos.x + cursor_bb.maxx, mpos.y + cursor_bb.maxy},
+        (rgba_t){0, 228, 48, 255});
 
     r.stop_drawing();
 }
 
 int main(int argc, char **argv) {
+
+    renderer r{raylib_renderer{}};
+
     constexpr int screen_width = 640;
     constexpr int screen_height = 480;
 

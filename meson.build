@@ -31,6 +31,11 @@ endif
 #flecs_dep = flecs_proj.get_variable('flecs_dep')
 #deps += flecs_dep
 
+# build entt
+entt_sub_proj = cmake.subproject('entt')
+entt_dep = entt_sub_proj.dependency('EnTT')
+deps += entt_dep
+
 # build imgui
 imgui_proj = subproject('imgui_build')
 imgui_sources = imgui_proj.get_variable('sources')

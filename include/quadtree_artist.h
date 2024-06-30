@@ -31,9 +31,9 @@ protected:
 
     void draw_helper(node_id nid, bbox const& bb) {
         _r.draw_rectangle(
-            (vec2){bb.minx, bb.miny},
-            (vec2){bb.maxx, bb.maxy},
-            (color){130, 130, 130, 255});
+            (vec2_t){bb.minx, bb.miny},
+            (vec2_t){bb.maxx, bb.maxy},
+            (rgba_t){130, 130, 130, 255});
 
         // split recursively if there are children, draw points otherwise
         bbox bb_nw, bb_ne, bb_sw, bb_se;
@@ -50,9 +50,9 @@ protected:
             auto end_excl = _qt.node_points_begin[nid + 1];
             for (auto i = start_inc; i < end_excl; i++) {
                 _r.draw_rectangle(
-                    (vec2){_qt.pointboxes[i].bb.minx, _qt.pointboxes[i].bb.miny},
-                    (vec2){_qt.pointboxes[i].bb.maxx, _qt.pointboxes[i].bb.maxy},
-                    (color){200, 200, 200, 255});
+                    (vec2_t){_qt.pointboxes[i].bb.minx, _qt.pointboxes[i].bb.miny},
+                    (vec2_t){_qt.pointboxes[i].bb.maxx, _qt.pointboxes[i].bb.maxy},
+                    (rgba_t){200, 200, 200, 255});
             }
         }
     }
@@ -66,9 +66,9 @@ protected:
             if (empty != _qt.nodes[nid].se) draw_query_helper(_qt.nodes[nid].se, query_bb);
 
             _r.draw_rectangle(
-                (vec2){_qt.node_bbs[nid].minx, _qt.node_bbs[nid].miny},
-                (vec2){_qt.node_bbs[nid].maxx, _qt.node_bbs[nid].maxy},
-                (color){255, 0, 0, 255});
+                (vec2_t){_qt.node_bbs[nid].minx, _qt.node_bbs[nid].miny},
+                (vec2_t){_qt.node_bbs[nid].maxx, _qt.node_bbs[nid].maxy},
+                (rgba_t){255, 0, 0, 255});
         }
     }
 
