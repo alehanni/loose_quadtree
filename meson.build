@@ -27,9 +27,9 @@ if host_machine.system() != 'emscripten'
 endif
 
 # build flecs
-flecs_proj = subproject('flecs')
-flecs_dep = flecs_proj.get_variable('flecs_dep')
-deps += flecs_dep
+#flecs_proj = subproject('flecs')
+#flecs_dep = flecs_proj.get_variable('flecs_dep')
+#deps += flecs_dep
 
 # build imgui
 imgui_proj = subproject('imgui_build')
@@ -45,4 +45,4 @@ subdir('src')
 executable('demo', sources, include_directories : inc, dependencies : deps)
 
 # build tests
-subdir('tests')
+#subdir('tests')

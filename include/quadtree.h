@@ -197,16 +197,16 @@ quadtree build(std::vector<T> xs, std::vector<std::uint32_t> &indices, bbox_func
 
     // convert type to bounding boxes and points
     std::vector<pointbox> pbs(xs.size());
-    std::transform(&xs.front(), &xs.back(), &pbs.front(), to_pointbox);
+    std::transform(xs.begin(), xs.end(), pbs.begin(), to_pointbox);
 
     // compute bounding box of midpoints
     bbox big_box = bbox();
-    std::for_each(&pbs.front(), &pbs.back(), [&big_box](pointbox &pb) mutable {big_box |= pb.mid;});
+    std::for_each(pbs.begin(), pbs.end(), [&big_box](pointbox &pb) mutable {big_box |= pb.mid;});
 
     quadtree qt;
     qt.pointboxes = std::move(pbs);
     qt.indices = std::move(indices);
-    qt.root = build_helper(qt, big_box, &qt.pointboxes.front(), &qt.pointboxes.back(), MAX_QUADTREE_DEPTH);
+    qt.root = build_helper(qt, big_box, &qt.pointboxes.front(), &qt.pointboxes.back() + 1, MAX_QUADTREE_DEPTH);
 
     qt.node_points_begin.push_back(qt.pointboxes.size());
 

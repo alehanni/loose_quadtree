@@ -1,10 +1,14 @@
+#if defined(PLATFORM_WEB)
+    #include <emscripten/emscripten.h>
+#endif
+
 #include <cassert>
 #include <vector>
 #include <random>
 #include <cstdint>
 
 #include "resources/16x16icons.h"
-#include "renderer.h"
+#include "raylib_renderer.h"
 #include "quadtree.h"
 #include "quadtree_artist.h"
 #include "utiltypes.h"
@@ -18,8 +22,8 @@ struct ctx {
 };
 
 void draw_items(std::vector<rectangle> const& rects, size_t tex_handle, auto &r) {
-    for (auto i=0; i<rects.size(); i++)
-        r.draw_sprite(rects[i].min, (vec2){(i % 16) * 16, (i / 16) * 16}, 16, 16, tex_handle);
+    for (auto i=0U; i<rects.size(); i++)
+        r.draw_sprite(rects[i].min, (vec2){(float)(i % 16) * 16.f, (float)(i / 16) * 16.f}, 16, 16, tex_handle);
 }
 
 void update_draw_frame(void *ctx_arg) {

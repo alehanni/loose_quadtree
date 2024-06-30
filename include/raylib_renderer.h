@@ -55,7 +55,19 @@ struct raylib_renderer {
     }
 
     static void draw_sprite(auto xy_dest, auto xy_src, auto w, auto h, auto id) {
-        DrawTextureRec(texture_handles[id], {x: xy_src.x, y: xy_src.y, width: w, height: h}, {x: xy_dest.x, y: xy_dest.y}, WHITE);
+        DrawTextureRec(
+            texture_handles[id],
+            {
+                static_cast<float>(xy_src.x),
+                static_cast<float>(xy_src.y),
+                static_cast<float>(w),
+                static_cast<float>(h)
+            },
+            {
+                static_cast<float>(xy_dest.x),
+                static_cast<float>(xy_dest.y)
+            },
+            WHITE);
     }
 
 private:
