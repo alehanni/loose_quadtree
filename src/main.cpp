@@ -16,12 +16,7 @@
 #include "entt/entt.hpp"
 #include "renderer.h"
 
-struct ctx {
-    quadtree qt;
-    size_t icon_tex_handle;
-    std::vector<rectangle> rects;
-    std::vector<std::uint32_t> indices;
-};
+using namespace entt::literals;
 
 void draw_items(std::vector<rectangle> const& rects, size_t tex_handle) {
     auto r = entt::locator<renderer>::value();
@@ -29,7 +24,7 @@ void draw_items(std::vector<rectangle> const& rects, size_t tex_handle) {
         r->draw_sprite(rects[i].min, (vec2_t){(float)(i % 16) * 16.f, (float)(i / 16) * 16.f}, 16, 16, tex_handle);
 }
 
-void update_draw_frame(void *ctx_arg) {
+void update_draw_frame() {
     auto r = entt::locator<renderer>::value();
 
     static std::vector<std::uint32_t> query_results;
@@ -37,10 +32,8 @@ void update_draw_frame(void *ctx_arg) {
         -8.0f, -8.0f, 8.0f, 8.0f
     };
     
-    //auto &r = ((ctx *)ctx_arg)->r;
-    auto &qt = ((ctx *)ctx_arg)->qt;
-    auto &icon_tex_handle = ((ctx *)ctx_arg)->icon_tex_handle;
-    auto &rects = ((ctx *)ctx_arg)->rects;
+    quadtree &&qt = entt::monostate<"quadtree"_hs>{};
+    std::vector<rectangle> &&rects = entt::monostate<"rect_vector"_hs>{};
 
     auto qt_artist = quadtree_artist(qt);
 
@@ -64,7 +57,8 @@ void update_draw_frame(void *ctx_arg) {
     qt_artist.draw_query(offset_bb);
     
     // draw item sprites
-    draw_items(rects, icon_tex_handle);
+    size_t tex_handle = entt::monostate<"16x16icons_tex"_hs>{};
+    draw_items(rects, tex_handle);
 
     // draw query results
     for (auto i = 0U; i < query_results.size(); i++)
@@ -90,27 +84,29 @@ int main(int argc, char **argv) {
     constexpr int screen_width = 640;
     constexpr int screen_height = 480;
 
-    ctx my_ctx;
-
     r->init_window(screen_width, screen_height, "quadtree");
-    my_ctx.icon_tex_handle = r->texture_from_memory(__16x16icons_png, __16x16icons_png_len);
+    entt::monostate<"16x16icons_tex"_hs>{} = r->texture_from_memory(__16x16icons_png, __16x16icons_png_len);
 
     // generate a bunch of boxes and build a quadtree
     auto e1 = std::default_random_engine(1);
     auto x_dist = std::uniform_int_distribution(80 + 12, 560 - 12);
     auto y_dist = std::uniform_int_distribution(60 + 12, 420 - 12);
 
-    my_ctx.rects.reserve(140U);
-    my_ctx.indices.reserve(140U);
-    for (auto i = 0U; i < 140U; i++) {
-        my_ctx.rects.emplace_back();
-        my_ctx.rects[i].min = {(float)x_dist(e1), (float)y_dist(e1)};
-        my_ctx.rects[i].max = {my_ctx.rects[i].min.x + 16.f, my_ctx.rects[i].min.y + 16.f};
-        my_ctx.indices.push_back(i);
+    std::vector<rectangle> rects;
+    std::vector<std::uint32_t> indices;
+    rects.reserve(140u);
+    indices.reserve(140u);
+    for (auto i = 0U; i < 140u; i++) {
+        rects.emplace_back();
+        rects[i].min = {(float)x_dist(e1), (float)y_dist(e1)};
+        rects[i].max = {rects[i].min.x + 16.f, rects[i].min.y + 16.f};
+        indices.push_back(i);
     }
 
+    entt::monostate<"rect_vector"_hs>{} = (std::vector<rectangle> &)rects;
+
     // create quadtree
-    my_ctx.qt = build<rectangle>(my_ctx.rects, my_ctx.indices, [](rectangle &rect){
+    quadtree &&qt = build<rectangle>(rects, indices, [](rectangle &rect){
         bbox bb;
         bb.minx = rect.min.x;
         bb.miny = rect.min.y;
@@ -118,12 +114,13 @@ int main(int argc, char **argv) {
         bb.maxy = rect.max.y;
         return bb;
     });
+    entt::monostate<"quadtree"_hs>{} = qt;
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop_arg(update_draw_frame, (void *)&my_ctx, 0, 1);
+    emscripten_set_main_loop(update_draw_frame, 0, 1);
 #else
     while(!r->window_should_close()) {
-        update_draw_frame((void *)&my_ctx);
+        update_draw_frame();
     }
 #endif
 
