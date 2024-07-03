@@ -18,7 +18,7 @@
 
 using namespace entt::literals;
 
-void draw_items(std::vector<rectangle> const& rects, size_t tex_handle) {
+void draw_items(std::vector<box_t> const& rects, size_t tex_handle) {
     auto r = entt::locator<renderer>::value();
     for (auto i=0U; i<rects.size(); i++)
         r->draw_sprite(rects[i].min, (vec2_t){(float)(i % 16) * 16.f, (float)(i / 16) * 16.f}, 16, 16, tex_handle);
@@ -28,23 +28,21 @@ void update_draw_frame() {
     auto r = entt::locator<renderer>::value();
 
     static std::vector<std::uint32_t> query_results;
-    static constexpr bbox cursor_bb = {
-        -8.0f, -8.0f, 8.0f, 8.0f
-    };
+    static constexpr box_t cursor_bb = {{-8.0, -8.0}, {8.0, 8.0}};
     
     quadtree &&qt = entt::monostate<"quadtree"_hs>{};
-    std::vector<rectangle> &&rects = entt::monostate<"rect_vector"_hs>{};
+    std::vector<box_t> &&rects = entt::monostate<"rect_vector"_hs>{};
 
     auto qt_artist = quadtree_artist(qt);
 
     // get query results
     auto mpos = r->get_mouse_position();
 
-    bbox offset_bb = {
-        (float)mpos.x + cursor_bb.minx,
-        (float)mpos.y + cursor_bb.miny,
-        (float)mpos.x + cursor_bb.maxx,
-        (float)mpos.y + cursor_bb.maxy
+    box_t offset_bb = {
+        (float)mpos.x + cursor_bb.min.x,
+        (float)mpos.y + cursor_bb.min.y,
+        (float)mpos.x + cursor_bb.max.x,
+        (float)mpos.y + cursor_bb.max.y
     };
     query_results.clear();
     qt.query(offset_bb, query_results);
@@ -63,14 +61,14 @@ void update_draw_frame() {
     // draw query results
     for (auto i = 0U; i < query_results.size(); i++)
         r->draw_rectangle(
-            (vec2_t){qt.pointboxes[query_results[i]].bb.minx, qt.pointboxes[query_results[i]].bb.miny},
-            (vec2_t){qt.pointboxes[query_results[i]].bb.maxx, qt.pointboxes[query_results[i]].bb.maxy},
+            (vec2_t){qt.pointboxes[query_results[i]].min.x, qt.pointboxes[query_results[i]].min.y},
+            (vec2_t){qt.pointboxes[query_results[i]].max.x, qt.pointboxes[query_results[i]].max.y},
             (rgba_t){0, 255, 0, 255});
 
     // draw box at cursor
     r->draw_rectangle_fill(
-        (vec2_t){mpos.x + cursor_bb.minx, mpos.y + cursor_bb.miny}, 
-        (vec2_t){mpos.x + cursor_bb.maxx, mpos.y + cursor_bb.maxy},
+        (vec2_t){mpos.x + cursor_bb.min.x, mpos.y + cursor_bb.min.y}, 
+        (vec2_t){mpos.x + cursor_bb.max.x, mpos.y + cursor_bb.max.y},
         (rgba_t){0, 228, 48, 255});
 
     r->stop_drawing();
@@ -92,7 +90,7 @@ int main(int argc, char **argv) {
     auto x_dist = std::uniform_int_distribution(80 + 12, 560 - 12);
     auto y_dist = std::uniform_int_distribution(60 + 12, 420 - 12);
 
-    std::vector<rectangle> rects;
+    std::vector<box_t> rects;
     std::vector<std::uint32_t> indices;
     rects.reserve(140u);
     indices.reserve(140u);
@@ -103,17 +101,10 @@ int main(int argc, char **argv) {
         indices.push_back(i);
     }
 
-    entt::monostate<"rect_vector"_hs>{} = (std::vector<rectangle> &)rects;
+    entt::monostate<"rect_vector"_hs>{} = (std::vector<box_t> &)rects;
 
     // create quadtree
-    quadtree &&qt = build<rectangle>(rects, indices, [](rectangle &rect){
-        bbox bb;
-        bb.minx = rect.min.x;
-        bb.miny = rect.min.y;
-        bb.maxx = rect.max.x;
-        bb.maxy = rect.max.y;
-        return bb;
-    });
+    quadtree &&qt = build<box_t>(rects, indices, [](box_t &bb){ return bb; });
     entt::monostate<"quadtree"_hs>{} = qt;
 
 #if defined(PLATFORM_WEB)
