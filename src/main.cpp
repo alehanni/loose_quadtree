@@ -3,119 +3,118 @@
 #endif
 
 #include <cassert>
-#include <vector>
-#include <random>
 #include <cstdint>
+#include <cmath>
+#include <vector>
 
+#include "raylib.h"
 #include "resources/16x16icons.h"
-#include "raylib_renderer.h"
-#include "quadtree.h"
-#include "quadtree_artist.h"
-#include "utiltypes.h"
+#include "rand.hpp"
+#include "loose_quadtree_artist.hpp"
+#include "loose_quadtree.hpp"
 
-#include "entt/entt.hpp"
-#include "renderer.h"
+Texture2D g_16x16icons_tex;
+alh::loose_quadtree_t<alh::loose_quadtree::aabb_t> g_qt;
+std::vector<alh::loose_quadtree::aabb_t> g_rects;
 
-using namespace entt::literals;
-
-void draw_items(std::vector<box_t> const& rects, size_t tex_handle) {
-    auto r = entt::locator<renderer>::value();
-    for (auto i=0U; i<rects.size(); i++)
-        r->draw_sprite(rects[i].min, (vec2_t){(float)(i % 16) * 16.f, (float)(i / 16) * 16.f}, 16, 16, tex_handle);
+void draw_items(std::vector<alh::loose_quadtree::aabb_t> const& rects) {
+    for (uint64_t i=0; i<rects.size(); i++) {
+        Vector2 xy_dest = {rects[i].min.x, rects[i].min.y};
+        Vector2 xy_src = {(float)(i % 16) * 16.f, (float)(i / 16) * 16.f};
+        DrawTextureRec(
+            g_16x16icons_tex,
+            {(float)xy_src.x, (float)xy_src.y, 16.f, 16.f},
+            {(float)xy_dest.x, (float)xy_dest.y},
+            WHITE
+        );
+    }
 }
 
 void update_draw_frame() {
-    auto r = entt::locator<renderer>::value();
+    static constexpr alh::loose_quadtree::aabb_t cursor_bb = {{-8.0, -8.0}, {8.0, 8.0}};
 
-    static std::vector<std::uint32_t> query_results;
-    static constexpr box_t cursor_bb = {{-8.0, -8.0}, {8.0, 8.0}};
-    
-    quadtree &&qt = entt::monostate<"quadtree"_hs>{};
-    std::vector<box_t> &&rects = entt::monostate<"rect_vector"_hs>{};
-
-    auto qt_artist = quadtree_artist(qt);
+    auto qt_artist = alh::loose_quadtree_artist_t(g_qt);
 
     // get query results
-    auto mpos = r->get_mouse_position();
+    auto mpos = GetMousePosition();
 
-    box_t offset_bb = {
-        (float)mpos.x + cursor_bb.min.x,
-        (float)mpos.y + cursor_bb.min.y,
-        (float)mpos.x + cursor_bb.max.x,
-        (float)mpos.y + cursor_bb.max.y
+    alh::loose_quadtree::aabb_t offset_bb = {
+        {(float)mpos.x + cursor_bb.min.x, (float)mpos.y + cursor_bb.min.y},
+        {(float)mpos.x + cursor_bb.max.x, (float)mpos.y + cursor_bb.max.y}
     };
-    query_results.clear();
-    qt.query(offset_bb, query_results);
 
-    r->start_drawing();
-    r->clear_screen();
+    BeginDrawing();
+    ClearBackground(DARKGRAY);
 
     // draw quadtree
     qt_artist.draw();
     qt_artist.draw_query(offset_bb);
     
     // draw item sprites
-    size_t tex_handle = entt::monostate<"16x16icons_tex"_hs>{};
-    draw_items(rects, tex_handle);
+    draw_items(g_rects);
 
     // draw query results
-    for (auto i = 0U; i < query_results.size(); i++)
-        r->draw_rectangle(
-            (vec2_t){qt.pointboxes[query_results[i]].min.x, qt.pointboxes[query_results[i]].min.y},
-            (vec2_t){qt.pointboxes[query_results[i]].max.x, qt.pointboxes[query_results[i]].max.y},
-            (rgba_t){0, 255, 0, 255});
+    for (auto it = g_qt.query_start(offset_bb); it != g_qt.query_end(); ++it) {
+        auto bb = *it;
+        DrawRectangleLines(bb.min.x,
+                           bb.min.y,
+                           bb.max.x - bb.min.x,
+                           bb.max.y - bb.min.y,
+                           {0, 255, 0, 255});
+    }
 
     // draw box at cursor
-    r->draw_rectangle_fill(
-        (vec2_t){mpos.x + cursor_bb.min.x, mpos.y + cursor_bb.min.y}, 
-        (vec2_t){mpos.x + cursor_bb.max.x, mpos.y + cursor_bb.max.y},
-        (rgba_t){0, 228, 48, 255});
+    {
+        Vector2 min = {mpos.x + cursor_bb.min.x, mpos.y + cursor_bb.min.y};
+        Vector2 max = {mpos.x + cursor_bb.max.x, mpos.y + cursor_bb.max.y};
+        DrawRectangle(min.x,
+                      min.y,
+                      max.x - min.x,
+                      max.y - min.y,
+                      {0, 228, 48, 255});
+    }
 
-    r->stop_drawing();
+    EndDrawing();
 }
 
 int main(int argc, char **argv) {
-
-    renderer r{raylib_renderer{}};
-    entt::locator<renderer>::emplace(r);
-
     constexpr int screen_width = 640;
     constexpr int screen_height = 480;
 
-    r->init_window(screen_width, screen_height, "quadtree");
-    entt::monostate<"16x16icons_tex"_hs>{} = r->texture_from_memory(__16x16icons_png, __16x16icons_png_len);
+    InitWindow(screen_width, screen_height, "loose_quadtree");
+#if !defined(PLATFORM_WEB)
+    SetTargetFPS(60);
+#endif
+
+    auto img = LoadImageFromMemory(".png", __16x16icons_png, __16x16icons_png_len);
+    g_16x16icons_tex = LoadTextureFromImage(img);
 
     // generate a bunch of boxes and build a quadtree
-    auto e1 = std::default_random_engine(1);
-    auto x_dist = std::uniform_int_distribution(80 + 12, 560 - 12);
-    auto y_dist = std::uniform_int_distribution(60 + 12, 420 - 12);
+    auto rng = alh::rand_f32();
+    rng.seed(1);
 
-    std::vector<box_t> rects;
     std::vector<std::uint32_t> indices;
-    rects.reserve(140u);
+    g_rects.reserve(140u);
     indices.reserve(140u);
-    for (auto i = 0U; i < 140u; i++) {
-        rects.emplace_back();
-        rects[i].min = {(float)x_dist(e1), (float)y_dist(e1)};
-        rects[i].max = {rects[i].min.x + 16.f, rects[i].min.y + 16.f};
+    for (auto i = 0u; i < 140u; i++) {
+        g_rects.emplace_back();
+        g_rects[i].min = {floorf(rng.get_uniform(80+12, 560-12)), floorf(rng.get_uniform(60+12, 420-12))};
+        g_rects[i].max = {g_rects[i].min.x + 16.f, g_rects[i].min.y + 16.f};
         indices.push_back(i);
     }
 
-    entt::monostate<"rect_vector"_hs>{} = (std::vector<box_t> &)rects;
-
     // create quadtree
-    quadtree &&qt = build<box_t>(rects, indices, [](box_t &bb){ return bb; });
-    entt::monostate<"quadtree"_hs>{} = qt;
+    g_qt.build(g_rects, g_rects);
 
 #if defined(PLATFORM_WEB)
     emscripten_set_main_loop(update_draw_frame, 0, 1);
 #else
-    while(!r->window_should_close()) {
+    while(!WindowShouldClose()) {
         update_draw_frame();
     }
 #endif
 
-    r->close_window();
+    CloseWindow();
 
     return 0;
 }

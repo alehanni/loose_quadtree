@@ -1,12 +1,6 @@
 [submodule "subprojects/raylib"]
 	path = subprojects/raylib
 	url = https://github.com/raysan5/raylib.git
-[submodule "subprojects/Catch2"]
-	path = subprojects/Catch2
-	url = https://github.com/catchorg/Catch2.git
 [submodule "subprojects/imgui_build/imgui"]
 	path = subprojects/imgui_build/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "subprojects/entt"]
-	path = subprojects/entt
-	url = https://github.com/skypjack/entt.git
