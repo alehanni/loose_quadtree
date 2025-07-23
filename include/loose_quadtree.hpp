@@ -76,8 +76,15 @@ struct loose_quadtree_t {
         query_iter_t(loose_quadtree_t &tree, id_t head) : tree(tree), head(head) {}
         query_iter_t &operator++() { head = tree.query_list[head]; return *this; }
         //query_iter_t operator++(int);
-        bool operator==(query_iter_t &other) const { return ((*this).head == other.head); }
-        bool operator!=(query_iter_t &other) const { return !(*this == other); }
+        
+        friend bool operator==(query_iter_t const& lhs, query_iter_t const& rhs) {
+            return (lhs.head == rhs.head); 
+        }
+        
+        friend bool operator!=(query_iter_t const& lhs, query_iter_t const& rhs) {
+            return !(lhs == rhs);
+        }
+        
         T operator*() const { assert(head != empty); return tree.boxes[head].data; }
     private:
         loose_quadtree_t const& tree;
